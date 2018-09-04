@@ -1,15 +1,17 @@
 import anago
 import codecs
 import numpy as np
+import os
+import sys
 
 from os.path import dirname, abspath, join
 from anago.utils import load_data_and_labels
 
 
-def load_glove(file):
-    """Loads GloVe vectors in numpy array.
+def load_vectors(file):
+    """Loads vectors in numpy array.
     Args:
-        file (str): a path to a glove file.
+        file (str): a path to a vector file.
     Return:
         dict: a dict of numpy arrays.
     """
@@ -25,13 +27,19 @@ def load_glove(file):
 
 
 if __name__ == '__main__':
-    DATA_ROOT = join(dirname(abspath(__file__)), 'data/cypher')
-    EMBEDDING_PATH = '/home/varun/Downloads/glove.6B/glove.6B.100d.txt'
+    sys.path.append((dirname(abspath(__file__))))
+    from utils import get_config
 
-    train_path = join(DATA_ROOT, 'train.txt')
-    valid_path = join(DATA_ROOT, 'valid.txt')
+    config = get_config()
+    MODEL_DIR = config.get(u'train', 'model_dir')
+    train_path = config.get(u'train', 'train_data')
+    valid_path = config.get(u'train', 'validation_data')
+    EMBEDDING_PATH = config.get(u'train', 'vectors')
+    epoch = config.getint(u'train', 'iterations')
 
-    print(train_path)
+    if not os.path.exists(MODEL_DIR):
+        os.mkdir(MODEL_DIR)
+        print('Model Directory Created')
 
     print('Loading data...')
     x_train, y_train = load_data_and_labels(train_path)
@@ -39,8 +47,12 @@ if __name__ == '__main__':
     print(len(x_train), 'train sequences')
     print(len(x_valid), 'valid sequences')
 
-    embeddings = load_glove(EMBEDDING_PATH)
+    print('Loading embeddings...')
+    embeddings = load_vectors(EMBEDDING_PATH)
 
     # Use pre-trained word embeddings
-    model = anago.Sequence(embeddings=embeddings)
-    model.fit(x_train, y_train, x_valid, y_valid, epochs=10)
+    model = anago.Sequence(word_embedding_dim=200, char_embedding_dim=50, embeddings=embeddings)
+    model.fit(x_train, y_train, x_valid, y_valid, epochs=epoch)
+
+    print('Saving the model...')
+    model.save(join(MODEL_DIR, 'weights.h5'), join(MODEL_DIR, 'params.json'), join(MODEL_DIR, 'preprocessor_file'))
