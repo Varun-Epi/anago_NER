@@ -51,7 +51,7 @@ if __name__ == '__main__':
     embeddings = load_vectors(EMBEDDING_PATH)
 
     # Use pre-trained word embeddings
-    model = anago.Sequence(word_embedding_dim=200, char_embedding_dim=50, embeddings=embeddings)
+    model = anago.Sequence(word_embedding_dim=200, char_embedding_dim=50, dropout=0.2, embeddings=embeddings)
     model.fit(x_train, y_train, x_valid, y_valid, epochs=epoch)
 
     print('Saving the model...')
